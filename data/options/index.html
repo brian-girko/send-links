@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Options :: Share Links and Clipboard</title>
+</head>
+<body>
+  <style type="text/css">
+    input[type=text],
+    textarea {
+      width: 100%;
+      box-sizing: border-box;
+    }
+  </style>
+  <form>
+
+    <table width="100%">
+      <colgroup>
+        <col width="150px">
+        <col>
+      </colgroup>
+      <tbody>
+        <tr>
+          <td>Browser Name<sup>1</sup></td>
+          <td><input type="text" id="name" required placeholder="required"></td>
+        </tr>
+        <tr>
+          <td>Server<sup>2</sup></td>
+          <td><input type="text" id="server" required placeholder="required"></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h1>Token</h1>
+    <textarea cols="3" placeholder="Your websocket.in Token (required)" required id="token"></textarea>
+    <span>For the extension to share links and clipboard content with other computers on your network, you need to get your free and private token from <a href="https://www.websocket.in/account">websocket.in</a> and insert the token in all computers that you would like to be able to send or receive links. If you are using another WebSocket server (like your own private WSS server) that does not require a token, still fill the box with an arbitrary string.</span>
+
+    <p>
+      <input type="button" id="reset" value="Factory Reset">
+      <input type="button" id="support" value="Support Development"> - <input type="submit" id="save" value="Save">
+      <span id="toast"></span>
+    </p>
+  </form>
+
+  <ol>
+    <li>This is the name of your browser which is seen by all members of your network. It is recommended to name the browser such that it reveals both the computer and browser names (e.g.: chrome-desktop)</li>
+    <li>This is a Secure WebSocket server that is used to connect all the computers on your network together. You can use the default server or create your own. You can even have a local WSS server so that the extension could send links and share clipboard to the other computers on your network even if the INTERNET is not connected!</li>
+  </ol>
+  <script type="text/javascript" src="index.js"></script>
+</body>
+</html>
