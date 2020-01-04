@@ -5,11 +5,13 @@ const toast = document.getElementById('toast');
 chrome.storage.local.get({
   name: '',
   token: '',
-  server: 'wss://connect.websocket.in/v2/1?token=[token]'
+  server: 'wss://connect.websocket.in/v2/1?token=[token]',
+  password: ''
 }, prefs => {
   document.getElementById('name').value = prefs.name;
   document.getElementById('server').value = prefs.server;
   document.getElementById('token').value = prefs.token;
+  document.getElementById('password').value = prefs.password;
 });
 
 document.querySelector('form').addEventListener('submit', e => {
@@ -18,7 +20,8 @@ document.querySelector('form').addEventListener('submit', e => {
   chrome.storage.local.set({
     name: document.getElementById('name').value,
     server: document.getElementById('server').value,
-    token: document.getElementById('token').value
+    token: document.getElementById('token').value,
+    password: document.getElementById('password').value
   }, () => {
     toast.textContent = 'Options Saved';
     window.setTimeout(() => toast.textContent = '', 750);

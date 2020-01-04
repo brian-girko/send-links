@@ -7,12 +7,14 @@ const notify = e => chrome.notifications.create({
   title: chrome.runtime.getManifest().name,
   message: e.message || e
 });
+window.notify = notify;
 
 const prefs = {
   name: '',
   id: '',
   server: 'wss://connect.websocket.in/v2/1?token=[token]',
   token: '',
+  password: '',
   enabled: true,
   contexts: ['browser_action', 'link', 'selection']
 };
@@ -31,7 +33,7 @@ const button = {
 };
 peer.on('status', o => {
   if (o.newValue === 'CONNECTED') {
-    button.text('', 'Connected to the private network');
+    button.text('', 'Connected to the private network' + '\n\n' + 'Computer Name: ' + prefs.name);
   }
   else if (o.newValue === 'DISCONNECTED') {
     button.text('D', 'Disconnected from the private network');
@@ -62,16 +64,32 @@ const menu = {
   remove(id) {
     const r = id => new Promise(resolve => chrome.contextMenus.remove(id, resolve));
     return Promise.all([
-      r('browser_action-' + id).then(() => chrome.runtime.lastError),
+      r('browser_action_page-' + id).then(() => chrome.runtime.lastError),
+      r('browser_action_clipboard-' + id).then(() => chrome.runtime.lastError),
+      r('browser_action_file-' + id).then(() => chrome.runtime.lastError),
       r('link-' + id).then(() => chrome.runtime.lastError),
       r('selection-' + id).then(() => chrome.runtime.lastError)
     ]);
   },
   async init() {
     await menu.add({
-      id: 'browser_action',
+      id: 'browser_action_page',
       enabled: false,
       title: 'Open Page Link in',
+      contexts: ['browser_action'],
+      visible: prefs.contexts.indexOf('browser_action') !== -1
+    });
+    await menu.add({
+      id: 'browser_action_clipboard',
+      enabled: false,
+      title: 'Send Clipboard Content to',
+      contexts: ['browser_action'],
+      visible: prefs.contexts.indexOf('browser_action') !== -1
+    });
+    await menu.add({
+      id: 'browser_action_file',
+      enabled: false,
+      title: 'Send a File to',
       contexts: ['browser_action'],
       visible: prefs.contexts.indexOf('browser_action') !== -1
     });
@@ -109,7 +127,7 @@ const menu = {
     });
   }
 };
-chrome.contextMenus.onClicked.addListener((info, tab) => {
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (info.menuItemId === 'power') {
     chrome.storage.local.set({
       enabled: prefs.enabled === false
@@ -121,7 +139,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   else {
     const [context, id] = info.menuItemId.split('-');
     if (id && context) {
-      peer.send({
+      const o = {
         method: 'remote-action',
         id,
         context,
@@ -132,7 +150,52 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
           id: prefs.id,
           name: prefs.name
         }
-      });
+      };
+      try {
+        if (context === 'browser_action_file') {
+          chrome.storage.local.get({
+            width: 500,
+            height: 120,
+            left: screen.availLeft + Math.round((screen.availWidth - 500) / 2),
+            top: screen.availTop + Math.round((screen.availHeight - 120) / 2)
+          }, prefs => {
+            chrome.windows.create({
+              url: chrome.extension.getURL('data/file/index.html') + '?id=' + id,
+              width: prefs.width,
+              height: prefs.height,
+              left: prefs.left,
+              top: prefs.top,
+              type: 'popup'
+            });
+          });
+        }
+        else {
+          if (context === 'browser_action_clipboard') {
+            try {
+              o.selectionText = await navigator.clipboard.readText();
+            }
+            catch (e) {
+              o.selectionText = await new Promise((resolve, reject) => {
+                const input = document.createElement('input');
+                document.body.appendChild(input);
+                input.focus();
+                document.execCommand('paste');
+                if (input.value) {
+                  resolve(input.value);
+                }
+                else {
+                  reject(Error('Cannot read clipboard content or it is empty!'));
+                }
+                document.body.removeChild(input);
+              });
+            }
+          }
+          peer.send(o);
+        }
+      }
+      catch (e) {
+        notify('Cannot Complete user-action: ' + e.message);
+      }
     }
   }
 });
@@ -143,7 +206,13 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     chrome.contextMenus.update('restart', {
       enabled: peer.status === 'CONNECTED'
     });
-    chrome.contextMenus.update('browser_action', {
+    chrome.contextMenus.update('browser_action_page', {
+      enabled: peer.status === 'CONNECTED' && count !== 0
+    }, () => chrome.runtime.lastError);
+    chrome.contextMenus.update('browser_action_clipboard', {
+      enabled: peer.status === 'CONNECTED' && count !== 0
+    }, () => chrome.runtime.lastError);
+    chrome.contextMenus.update('browser_action_file', {
       enabled: peer.status === 'CONNECTED' && count !== 0
     }, () => chrome.runtime.lastError);
     chrome.contextMenus.update('link', {
@@ -167,7 +236,6 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 }
 
 peer.on('message', request => {
-  console.log(request);
   if (request.method === 'whoami') {
     peer.send({
       method: 'peer',
@@ -181,10 +249,22 @@ peer.on('message', request => {
     peer.emit('fake-status');
     menu.remove(request.id).then(() => {
       menu.add({
-        id: 'browser_action-' + request.id,
+        id: 'browser_action_page-' + request.id,
         title: request.name,
         contexts: ['browser_action'],
-        parentId: 'browser_action'
+        parentId: 'browser_action_page'
+      });
+      menu.add({
+        id: 'browser_action_clipboard-' + request.id,
+        title: request.name,
+        contexts: ['browser_action'],
+        parentId: 'browser_action_clipboard'
+      });
+      menu.add({
+        id: 'browser_action_file-' + request.id,
+        title: request.name,
+        contexts: ['browser_action'],
+        parentId: 'browser_action_file'
       });
       menu.add({
         id: 'link-' + request.id,
@@ -206,7 +286,7 @@ peer.on('message', request => {
     menu.remove(request.id);
   }
   else if (request.method === 'remote-action' && request.id === prefs.id) {
-    if (request.context === 'browser_action') {
+    if (request.context === 'browser_action_page') {
       chrome.tabs.create({
         url: request.page
       });
@@ -216,7 +296,7 @@ peer.on('message', request => {
         url: request.link
       });
     }
-    else if (request.context === 'selection') {
+    else if (request.context === 'selection' || request.context == 'browser_action_clipboard') {
       navigator.clipboard.writeText(request.selectionText).catch(() => new Promise(resolve => {
         document.oncopy = e => {
           e.clipboardData.setData('text/plain', request.selectionText);
@@ -238,6 +318,19 @@ peer.on('status', o => o.newValue === 'CONNECTED' && peer.send({
   name: prefs.name
 }));
 peer.on('error', notify);
+peer.on('binary', e => {
+  const blob = new Blob(e.chunks, {
+    type: e.info.type
+  });
+  const href = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = href;
+  a.download = e.info.name;
+  a.click();
+  window.setTimeout(() => {
+    URL.revokeObjectURL(href);
+  }, 30000);
+});
 
 button.text('D', chrome.runtime.getManifest().name);
 chrome.storage.local.get(prefs, async ps => {
@@ -256,15 +349,19 @@ chrome.storage.local.get(prefs, async ps => {
   }
   // prefs
   Object.assign(prefs, ps);
+  // peer.id is required for file transfer
+  peer.id = prefs.id;
   // peer
-  peer.prefs.token = prefs.token;
-  peer.prefs.server = prefs.server;
   peer.offline = prefs.enabled === false;
+  await peer.configure({
+    token: prefs.token,
+    server: prefs.server,
+    password: prefs.password
+  });
   // context menu
   await menu.init();
   // connection
   if (prefs.enabled) {
-    console.log('stating...');
     peer.connect('init');
   }
 });
@@ -277,18 +374,24 @@ chrome.storage.onChanged.addListener(ps => {
   if (ps.enabled && !prefs.enabled) {
     peer.shutdown();
   }
-  if (ps.token) {
-    peer.prefs.token = prefs.token;
-    if (prefs.token) {
-      peer.restart();
+  if (ps.token || ps.server || ps.name || ps.password) {
+    if (ps.token) {
+      peer.configure({
+        token: prefs.token
+      });
     }
-    else {
-      peer.disconnect();
+    if (ps.server) {
+      peer.configure({
+        server: prefs.server
+      });
     }
-  }
-  if (ps.server || ps.name) {
-    peer.prefs.server = prefs.server;
-    if (prefs.token) {
+    if (ps.password) {
+      peer.configure({
+        password: prefs.password
+      });
+    }
+    //
+    if (prefs.token && prefs.enabled) {
       peer.restart();
     }
     else {
@@ -299,7 +402,13 @@ chrome.storage.onChanged.addListener(ps => {
     chrome.contextMenus.update('link', {
       visible: ps.contexts.indexOf('link') !== -1
     });
-    chrome.contextMenus.update('browser_action', {
+    chrome.contextMenus.update('browser_action_page', {
+      visible: ps.contexts.indexOf('browser_action') !== -1
+    });
+    chrome.contextMenus.update('browser_action_clipboard', {
+      visible: ps.contexts.indexOf('browser_action') !== -1
+    });
+    chrome.contextMenus.update('browser_action_file', {
       visible: ps.contexts.indexOf('browser_action') !== -1
     });
     chrome.contextMenus.update('separator', {
@@ -310,3 +419,34 @@ chrome.storage.onChanged.addListener(ps => {
     });
   }
 });
+//
+chrome.runtime.onMessage.addListener(request => {
+  console.log(request);
+});
+
+// FAQs and Feedback
+{
+  const {onInstalled, setUninstallURL, getManifest} = chrome.runtime;
+  const {name, version} = getManifest();
+  const page = getManifest().homepage_url;
+  onInstalled.addListener(({reason, previousVersion}) => {
+    chrome.storage.local.get({
+      'faqs': true,
+      'last-update': 0
+    }, prefs => {
+      if (reason === 'install' || (prefs.faqs && reason === 'update')) {
+        const doUpdate = (Date.now() - prefs['last-update']) / 1000 / 60 / 60 / 24 > 45;
+        if (doUpdate && previousVersion !== version) {
+          chrome.tabs.create({
+            url: page + '?version=' + version +
+              (previousVersion ? '&p=' + previousVersion : '') +
+              '&type=' + reason,
+            active: reason === 'install'
+          });
+          chrome.storage.local.set({'last-update': Date.now()});
+        }
+      }
+    });
+  });
+  setUninstallURL(page + '?rd=feedback&name=' + encodeURIComponent(name) + '&version=' + version);
+}

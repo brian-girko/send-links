@@ -5,6 +5,10 @@
 </head>
 <body>
   <style type="text/css">
+    body {
+      min-width: 510px;
+    }
+    input[type=password],
     input[type=text],
     textarea {
       width: 100%;
@@ -12,10 +16,9 @@
     }
   </style>
   <form>
-
     <table width="100%">
       <colgroup>
-        <col width="150px">
+        <col width="100px">
         <col>
       </colgroup>
       <tbody>
@@ -26,6 +29,10 @@
         <tr>
           <td>Server<sup>2</sup></td>
           <td><input type="text" id="server" required placeholder="required"></td>
+        </tr>
+        <tr>
+          <td>Password<sup>3</sup></td>
+          <td><input type="password" id="password" placeholder="optional password"></td>
         </tr>
       </tbody>
     </table>
@@ -44,6 +51,7 @@
   <ol>
     <li>This is the name of your browser which is seen by all members of your network. It is recommended to name the browser such that it reveals both the computer and browser names (e.g.: chrome-desktop)</li>
     <li>This is a Secure WebSocket server that is used to connect all the computers on your network together. You can use the default server or create your own. You can even have a local WSS server so that the extension could send links and share clipboard to the other computers on your network even if the INTERNET is not connected!</li>
+    <li>If a password is present, the data that is sent to or received from the WebSocket server is encrypted end to end. This way the WebSocket server cannot read messages between peers. Note that you will need to enter the same password on all machines and then restart each extension for all the peers to be able to read the encrypted messages.</li>
   </ol>
   <script type="text/javascript" src="index.js"></script>
 </body>

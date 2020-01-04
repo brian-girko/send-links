@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>File Transfer</title>
+</head>
+<body>
+  <style type="text/css">
+    body {
+      margin: 0;
+      background: url('bg.svg') right 10px center no-repeat;
+      background-size: 48px 48px;
+      height: 100vh;
+      font-size: 13px;
+      font-family: Arial,"Helvetica Neue",Helvetica,sans-serif;
+      overflow: hidden;
+    }
+    progress {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100vw;
+    }
+    progress[value="0"],
+    progress[value="100"] {
+      display: none;
+    }
+    progress[value="0"] ~ table {
+      display: none;
+    }
+    label {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 0 10px;
+    }
+    input[type=file] {
+      outline: none;
+    }
+    table {
+      margin: 10px;
+    }
+  </style>
+  <progress value="0" max="100" id="progress"></progress>
+  <table>
+    <colgroup>
+      <col width="60">
+      <col>
+    </colgroup>
+    <tbody>
+      <tr>
+        <td>Filename:</td>
+        <td id="name">-</td>
+      </tr>
+      <tr>
+        <td>Size:</td>
+        <td id="size">-</td>
+      </tr>
+    </tbody>
+  </table>
+  <label>
+    <input type="file" id="file">
+  </label>
+  <script type="text/javascript" src="index.js"></script>
+</body>
+</html>

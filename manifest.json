@@ -1,19 +1,21 @@
 {
   "manifest_version": 2,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "name": "Send Links and Clipboard (via WebSocket)",
   "description": "Open Links in another browser or share clipboard between multiple machines using WebSockets",
   "permissions": [
     "notifications",
     "storage",
     "contextMenus",
+    "clipboardRead",
     "clipboardWrite",
-    "activeTab",
-    "wss://connect.websocket.in/*"
-   ],
-   "background": {
+    "activeTab"
+  ],
+  "homepage_url": "https://add0n.com/send-links.html",
+  "background": {
     "scripts": [
-      "peer.js",
+      "peer/safe.js",
+      "peer/peer.js",
       "background.js"
     ]
   },
