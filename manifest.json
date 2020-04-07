@@ -1,6 +1,6 @@
 {
   "manifest_version": 2,
-  "version": "0.1.1",
+  "version": "0.1.2",
   "name": "Send Links and Clipboard (via WebSocket)",
   "description": "Open Links in another browser or share clipboard between multiple machines using WebSockets",
   "permissions": [
