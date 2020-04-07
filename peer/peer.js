@@ -46,7 +46,7 @@ const peer = {
     }
     catch (e) {}
 
-    const wss = this.wss = new WebSocket((peer.prefs.server).replace('[token]', peer.prefs.token));
+    const wss = this.wss = new WebSocket((peer.prefs.server).replace('[apiKey]', peer.prefs.apiKey));
     peer.log('info', 'try to create a new socket');
     wss.onopen = () => {
       peer.status = 'CONNECTED';
@@ -73,7 +73,7 @@ const peer = {
     };
   },
   validate() {
-    return peer.prefs.token && peer.offline === false && navigator.onLine && peer.status === 'DISCONNECTED';
+    return peer.prefs.apiKey && peer.offline === false && navigator.onLine && peer.status === 'DISCONNECTED';
   },
   connect(reason) {
     peer.log('info', `try to connect "${reason}"`);
@@ -121,9 +121,9 @@ const peer = {
   async configure(ps) {
     peer.prefs = Object.assign(peer.prefs || {
       password: '', // if provided, all the data will be encrypted using this password
-      token: '',
+      apiKey: '',
       channel: 1,
-      server: 'wss://connect.websocket.in/v2/',
+      server: 'wss://connect.websocket.in/v3/',
       reconnect: [1000, 2000, 5000, 10000, 40000],
       iceServers: [{
         'url': 'stun:stun.services.mozilla.com'

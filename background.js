@@ -12,8 +12,8 @@ window.notify = notify;
 const prefs = {
   name: '',
   id: '',
-  server: 'wss://connect.websocket.in/v2/1?token=[token]',
-  token: '',
+  server: 'wss://connect.websocket.in/v3/1?apiKey=[apiKey]',
+  apiKey: '',
   password: '',
   enabled: true,
   contexts: ['browser_action', 'link', 'selection']
@@ -43,13 +43,13 @@ peer.on('status', o => {
   }
 });
 chrome.browserAction.onClicked.addListener(() => {
-  if (prefs.token) {
+  if (prefs.apiKey) {
     chrome.storage.local.set({
       enabled: prefs.enabled === false
     });
   }
   else {
-    notify('For the extension to work, you need to get a free private TOKEN.');
+    notify('For the extension to work, you need to get a free private API KEY.');
     chrome.runtime.openOptionsPage();
   }
 });
@@ -354,7 +354,7 @@ chrome.storage.local.get(prefs, async ps => {
   // peer
   peer.offline = prefs.enabled === false;
   await peer.configure({
-    token: prefs.token,
+    apiKey: prefs.apiKey,
     server: prefs.server,
     password: prefs.password
   });
@@ -374,10 +374,10 @@ chrome.storage.onChanged.addListener(ps => {
   if (ps.enabled && !prefs.enabled) {
     peer.shutdown();
   }
-  if (ps.token || ps.server || ps.name || ps.password) {
-    if (ps.token) {
+  if (ps.apiKey || ps.server || ps.name || ps.password) {
+    if (ps.apiKey) {
       peer.configure({
-        token: prefs.token
+        apiKey: prefs.apiKey
       });
     }
     if (ps.server) {
@@ -391,7 +391,7 @@ chrome.storage.onChanged.addListener(ps => {
       });
     }
     //
-    if (prefs.token && prefs.enabled) {
+    if (prefs.apiKey && prefs.enabled) {
       peer.restart();
     }
     else {
